@@ -46,6 +46,14 @@ let wishPage = 0;
 let chatMode = "idle";
 let chatDraft = {};
 let pendingPurchaseId = null;
+let characterTapIndex = 0;
+
+const characterTapMessages = [
+  "今日は、どんなものが気になっていますか？",
+  "思いついたものは、名前だけでも覚えておけますよ。",
+  "買えたものがあったら、一緒に記録しましょう。",
+  "迷っているものも、いったん保留として置いておけます。"
+];
 
 function loadState() {
   try {
@@ -209,19 +217,22 @@ function appendChatMessage(role, text) {
   message.textContent = text;
   document.getElementById("chatMessages").append(message);
   message.scrollIntoView({ block: "end", behavior: "smooth" });
+  if (role === "assistant") document.getElementById("homeAssistantBubble").textContent = text;
 }
 
 function setChatReplies(replies) {
-  const container = document.getElementById("chatQuickReplies");
-  container.innerHTML = "";
-  replies.forEach(({ label, action, value = "" }) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = action.startsWith("confirm") ? "chat-chip confirm" : "chat-chip";
-    button.textContent = label;
-    button.dataset.chatAction = action;
-    button.dataset.chatValue = value;
-    container.append(button);
+  ["chatQuickReplies", "homeQuickReplies"].forEach((id) => {
+    const container = document.getElementById(id);
+    container.innerHTML = "";
+    replies.forEach(({ label, action, value = "" }) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = action.startsWith("confirm") ? "chat-chip confirm" : "chat-chip";
+      button.textContent = label;
+      button.dataset.chatAction = action;
+      button.dataset.chatValue = value;
+      container.append(button);
+    });
   });
 }
 
@@ -244,9 +255,36 @@ function resetChat() {
 }
 
 function openChat() {
-  navigate("home");
+  const layer = document.getElementById("chatLayer");
+  layer.hidden = false;
+  document.body.classList.add("chat-open");
   if (!document.getElementById("chatMessages").children.length) resetChat();
-  window.setTimeout(() => document.getElementById("chatInput").focus(), 120);
+}
+
+function closeChat() {
+  document.getElementById("chatLayer").hidden = true;
+  document.body.classList.remove("chat-open", "is-input-active");
+  document.getElementById("chatInput").blur();
+}
+
+function changeCharacterMessage() {
+  const flowHints = {
+    "add-name": "追加したいものの名前を教えてください。",
+    "add-reason": "欲しい理由を教えてください。「理由はあとで」でも大丈夫です。",
+    "add-price": "価格を数字で入力するか、「価格は未定」を選べます。",
+    "add-priority": "今の気持ちに近い優先度を選んでください。",
+    "confirm-add": "追加する前に、吹き出しの内容を確認してください。",
+    "choose-purchase": "買えたものを、下の候補から選んでください。",
+    "confirm-purchase": "変更する前に、対象が合っているか確認してください。"
+  };
+  if (flowHints[chatMode]) {
+    document.getElementById("homeAssistantBubble").textContent = flowHints[chatMode];
+    return;
+  }
+  const message = characterTapMessages[characterTapIndex % characterTapMessages.length];
+  characterTapIndex += 1;
+  document.getElementById("homeAssistantBubble").textContent = message;
+  document.getElementById("character").classList.toggle("is-happy", characterTapIndex % 2 === 1);
 }
 
 function askReason() {
@@ -355,6 +393,7 @@ function handleChatAction(action, value = "") {
     pendingPurchaseId = null;
     showMainChatActions();
   } else if (action === "view-list") {
+    closeChat();
     navigate("wishes");
   } else if (action === "cancel") {
     appendChatMessage("user", "キャンセル");
@@ -403,7 +442,7 @@ function handleChatText(rawText) {
     showPurchaseChoices();
   } else if (/リスト|一覧/.test(text)) {
     appendChatMessage("assistant", "欲しいものの一覧を開きます。");
-    window.setTimeout(() => navigate("wishes"), 350);
+    window.setTimeout(() => { closeChat(); navigate("wishes"); }, 350);
   } else if (/欲しい|ほしい|買いたい|追加/.test(text)) {
     const name = extractWishName(text);
     chatDraft = {};
@@ -470,14 +509,24 @@ function bindEvents() {
   document.getElementById("menuButton").addEventListener("click", toggleMenu);
   document.addEventListener("click", (event) => { if (!event.target.closest(".menu-wrap")) closeMenu(); });
   document.getElementById("resetButtonMenu").addEventListener("click", () => { resetDemo(); closeMenu(); });
+  document.getElementById("characterTrigger").addEventListener("click", changeCharacterMessage);
+  document.getElementById("closeChat").addEventListener("click", closeChat);
   document.getElementById("restartChat").addEventListener("click", resetChat);
-  document.getElementById("chatQuickReplies").addEventListener("click", (event) => {
-    const button = event.target.closest("[data-chat-action]");
-    if (button) handleChatAction(button.dataset.chatAction, button.dataset.chatValue);
+  ["chatQuickReplies", "homeQuickReplies"].forEach((id) => {
+    document.getElementById(id).addEventListener("click", (event) => {
+      const button = event.target.closest("[data-chat-action]");
+      if (button) handleChatAction(button.dataset.chatAction, button.dataset.chatValue);
+    });
   });
   document.getElementById("chatComposer").addEventListener("submit", (event) => {
     event.preventDefault();
     const input = document.getElementById("chatInput");
+    handleChatText(input.value);
+    input.value = "";
+  });
+  document.getElementById("homeComposer").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const input = document.getElementById("homeChatInput");
     handleChatText(input.value);
     input.value = "";
   });
