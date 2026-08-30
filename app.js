@@ -187,9 +187,11 @@ function addWish() {
 }
 
 function updateAssistant(message, submessage, happy = false) {
-  document.getElementById("assistantMessage").textContent = message;
-  document.getElementById("assistantSubmessage").textContent = submessage;
   document.getElementById("character").classList.toggle("is-happy", happy);
+  if (chatMode === "idle") {
+    appendChatMessage("assistant", `${message}\n${submessage}`);
+    showMainChatActions();
+  }
 }
 
 let toastTimer;
@@ -242,16 +244,9 @@ function resetChat() {
 }
 
 function openChat() {
-  const layer = document.getElementById("chatLayer");
-  layer.hidden = false;
-  document.body.classList.add("chat-open");
+  navigate("home");
   if (!document.getElementById("chatMessages").children.length) resetChat();
-}
-
-function closeChat() {
-  document.getElementById("chatLayer").hidden = true;
-  document.body.classList.remove("chat-open", "is-input-active");
-  document.getElementById("chatInput").blur();
+  window.setTimeout(() => document.getElementById("chatInput").focus(), 120);
 }
 
 function askReason() {
@@ -360,7 +355,6 @@ function handleChatAction(action, value = "") {
     pendingPurchaseId = null;
     showMainChatActions();
   } else if (action === "view-list") {
-    closeChat();
     navigate("wishes");
   } else if (action === "cancel") {
     appendChatMessage("user", "キャンセル");
@@ -409,7 +403,7 @@ function handleChatText(rawText) {
     showPurchaseChoices();
   } else if (/リスト|一覧/.test(text)) {
     appendChatMessage("assistant", "欲しいものの一覧を開きます。");
-    window.setTimeout(() => { closeChat(); navigate("wishes"); }, 350);
+    window.setTimeout(() => navigate("wishes"), 350);
   } else if (/欲しい|ほしい|買いたい|追加/.test(text)) {
     const name = extractWishName(text);
     chatDraft = {};
@@ -476,7 +470,6 @@ function bindEvents() {
   document.getElementById("menuButton").addEventListener("click", toggleMenu);
   document.addEventListener("click", (event) => { if (!event.target.closest(".menu-wrap")) closeMenu(); });
   document.getElementById("resetButtonMenu").addEventListener("click", () => { resetDemo(); closeMenu(); });
-  document.getElementById("closeChat").addEventListener("click", closeChat);
   document.getElementById("restartChat").addEventListener("click", resetChat);
   document.getElementById("chatQuickReplies").addEventListener("click", (event) => {
     const button = event.target.closest("[data-chat-action]");
@@ -508,6 +501,7 @@ function bindEvents() {
 if (typeof document !== "undefined") {
   document.getElementById("todayLabel").textContent = new Intl.DateTimeFormat("ja-JP", { month: "long", day: "numeric", weekday: "short" }).format(new Date());
   bindEvents();
+  resetChat();
   renderWishes();
   const hash = location.hash.slice(1);
   navigate(["home", "wishes"].includes(hash) ? hash : "home");

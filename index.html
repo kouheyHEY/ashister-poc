@@ -41,14 +41,18 @@
                 <span class="character-badge">A</span>
               </div>
             </div>
-            <div class="assistant-copy">
-              <span class="assistant-label">今日のアシスター</span>
-              <h2 id="assistantMessage">欲しいものを、ひとつずつ叶えていきましょう。</h2>
-              <p id="assistantSubmessage">思いついたら、忘れないうちに置いておけます。</p>
-              <div class="assistant-actions">
-                <button class="primary-button" data-open-chat type="button">アシスターに話す</button>
-                <button class="secondary-button" data-open-wish type="button">＋ すぐ追加</button>
+            <div class="assistant-conversation" aria-label="アシスターとの会話">
+              <div class="conversation-heading">
+                <span class="assistant-label">アシスターと話す</span>
+                <button class="chat-restart" id="restartChat" type="button">最初から</button>
               </div>
+              <div class="chat-messages" id="chatMessages" aria-live="polite"></div>
+              <div class="chat-quick-replies" id="chatQuickReplies"></div>
+              <form class="chat-composer" id="chatComposer">
+                <label class="sr-only" for="chatInput">アシスターへのメッセージ</label>
+                <input id="chatInput" autocomplete="off" maxlength="100" placeholder="例：コーヒーミルが欲しい" />
+                <button type="submit" aria-label="送信">↑</button>
+              </form>
             </div>
           </article>
 
@@ -89,21 +93,6 @@
           <div class="pagination" id="wishPagination"><button id="previousWishPage" type="button" aria-label="前のページ">←</button><span id="wishPageLabel">1 / 1</span><button id="nextWishPage" type="button" aria-label="次のページ">→</button></div>
         </section>
       </main>
-
-      <section class="chat-layer" id="chatLayer" aria-label="アシスターとの会話" hidden>
-        <header class="chat-header">
-          <button class="chat-close" id="closeChat" type="button" aria-label="会話を閉じる">←</button>
-          <div class="chat-title"><span class="chat-avatar" aria-hidden="true">A</span><div><strong>アシスター</strong><small>いつでも話しかけてください</small></div></div>
-          <button class="chat-restart" id="restartChat" type="button">最初から</button>
-        </header>
-        <div class="chat-messages" id="chatMessages" aria-live="polite"></div>
-        <div class="chat-quick-replies" id="chatQuickReplies"></div>
-        <form class="chat-composer" id="chatComposer">
-          <label class="sr-only" for="chatInput">アシスターへのメッセージ</label>
-          <input id="chatInput" autocomplete="off" maxlength="100" placeholder="メッセージを入力" />
-          <button type="submit" aria-label="送信">↑</button>
-        </form>
-      </section>
 
       <nav class="bottom-nav" aria-label="画面メニュー">
         <button class="bottom-item is-active" data-view="home" type="button"><span aria-hidden="true">⌂</span>ホーム</button>
