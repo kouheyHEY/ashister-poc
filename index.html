@@ -37,8 +37,17 @@
 
       <main class="main-content">
         <header class="mobile-header">
-          <a class="brand" href="#home"><span class="brand-mark">A</span><span>アシスター</span></a>
-          <button class="quiet-button" id="resetButtonMobile" type="button">リセット</button>
+          <a class="brand" href="#home" data-go="home"><span class="brand-mark">A</span><span>アシスター</span></a>
+          <div class="menu-wrap">
+            <button class="menu-button" id="menuButton" type="button" aria-label="メニューを開く" aria-expanded="false" aria-controls="menuPopover"><span></span><span></span><span></span></button>
+            <div class="menu-popover" id="menuPopover" hidden>
+              <p>メニュー</p>
+              <button data-go="home" type="button">ホーム</button>
+              <button data-go="learning" type="button">ことばの練習</button>
+              <button data-go="wishes" type="button">欲しいもの</button>
+              <button class="menu-reset" id="resetButtonMenu" type="button">体験データをリセット</button>
+            </div>
+          </div>
         </header>
 
         <section class="view is-visible" id="homeView" data-page="home">
@@ -47,7 +56,6 @@
               <p class="eyebrow" id="todayLabel">今日</p>
               <h1>おかえりなさい</h1>
             </div>
-            <button class="quiet-button desktop-only" id="resetButton" type="button">体験データをリセット</button>
           </div>
 
           <article class="assistant-card">
@@ -125,7 +133,7 @@
             <button class="mode-tab" data-mode="words" role="tab" aria-selected="false" type="button">言葉を学ぶ</button>
           </div>
 
-          <div class="learning-layout">
+          <div class="learning-layout" id="learningWorkspace">
             <article class="panel practice-panel">
               <div class="step-label">TODAY'S PRACTICE <span>約3分</span></div>
               <h2 id="practiceTitle">最近気に入っているものを、知らない人にも伝わるように説明してください。</h2>
@@ -180,10 +188,15 @@
 
           <div class="wish-list" id="wishList"></div>
           <div class="empty-state" id="wishEmpty" hidden><span>◇</span><h2>まだ登録されていません</h2><p>気になっているものを、ひとつ置いてみましょう。</p><button class="primary-button" data-open-wish type="button">最初のひとつを追加</button></div>
+          <div class="pagination" id="wishPagination">
+            <button id="previousWishPage" type="button" aria-label="前のページ">←</button>
+            <span id="wishPageLabel">1 / 1</span>
+            <button id="nextWishPage" type="button" aria-label="次のページ">→</button>
+          </div>
         </section>
       </main>
 
-      <nav class="bottom-nav" aria-label="モバイルメニュー">
+      <nav class="bottom-nav" aria-label="画面メニュー">
         <button class="bottom-item is-active" data-view="home" type="button"><span>⌂</span>ホーム</button>
         <button class="bottom-item" data-view="learning" type="button"><span>あ</span>ことば</button>
         <button class="bottom-item" data-view="wishes" type="button"><span>◇</span>欲しいもの</button>

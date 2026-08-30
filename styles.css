@@ -138,3 +138,189 @@ dialog { width: min(560px, calc(100vw - 32px)); padding: 0; border: 0; border-ra
 }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+
+/* Single-screen application layout */
+html, body { height: 100%; overflow: hidden; }
+body { overscroll-behavior: none; }
+.app-shell { height: 100dvh; min-height: 0; overflow: hidden; }
+.sidebar { display: none; }
+.main-content { display: flex; height: 100dvh; min-height: 0; margin-left: 0; padding: 14px clamp(16px, 4vw, 52px) 82px; flex-direction: column; overflow: hidden; }
+.mobile-header { position: relative; z-index: 25; display: flex; width: 100%; max-width: 1180px; height: 46px; flex: 0 0 46px; align-items: center; justify-content: space-between; margin: 0 auto 12px; }
+.mobile-header .brand-mark { width: 32px; height: 32px; border-radius: 10px 10px 10px 4px; font-size: 18px; }
+.menu-wrap { position: relative; }
+.menu-button { display: grid; width: 40px; height: 40px; place-content: center; gap: 4px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,254,251,.82); cursor: pointer; box-shadow: 0 5px 18px rgba(55,49,38,.05); }
+.menu-button span { display: block; width: 17px; height: 2px; border-radius: 2px; background: var(--ink); }
+.menu-popover { position: absolute; z-index: 40; top: 47px; right: 0; width: 220px; padding: 10px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 18px 50px rgba(45,40,32,.16); animation: rise .18s ease both; }
+.menu-popover[hidden] { display: none; }
+.menu-popover p { margin: 4px 8px 8px; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+.menu-popover button { display: block; width: 100%; padding: 10px 11px; border: 0; border-radius: 9px; background: transparent; cursor: pointer; text-align: left; font-size: 13px; }
+.menu-popover button:hover { background: var(--purple-soft); color: var(--purple-dark); }
+.menu-popover .menu-reset { margin-top: 7px; border-top: 1px solid var(--line); border-radius: 0 0 9px 9px; color: var(--muted); font-size: 11px; }
+
+.view { width: 100%; max-width: 1180px; height: calc(100dvh - 154px); min-height: 0; margin: 0 auto; overflow: hidden; }
+.view.is-visible { display: flex; flex-direction: column; }
+.page-heading { min-height: 0; flex: 0 0 auto; margin-bottom: 14px; }
+.page-heading h1 { margin-top: 2px; font-size: clamp(25px, 3vw, 36px); }
+.page-heading .lead { margin-top: 5px; font-size: 12px; line-height: 1.55; }
+.home-heading { margin-bottom: 10px; }
+.assistant-card { height: clamp(210px, 34vh, 300px); min-height: 0; flex: 1 1 300px; padding: clamp(24px, 4vh, 42px) clamp(28px, 5vw, 54px); }
+.assistant-copy h2 { margin: 12px 0 7px; font-size: clamp(23px, 2.8vw, 34px); }
+.assistant-copy p { font-size: 13px; line-height: 1.6; }
+.assistant-actions { margin-top: 17px; }
+.character-wrap { min-height: 180px; }
+.home-grid { min-height: 0; flex: 0 0 clamp(155px, 23vh, 205px); gap: 14px; margin-top: 14px; }
+.home-grid .panel { display: flex; min-height: 0; padding: 17px 20px; flex-direction: column; }
+.home-grid .panel-heading h2 { font-size: 15px; }
+.home-grid .icon-box { width: 38px; height: 38px; }
+.practice-row, .wish-progress-row { min-height: 0; flex: 1; padding: 8px 4px; }
+.metric { font-size: 34px; }
+.mini-chart { height: 46px; }
+.progress-ring { width: 62px; height: 62px; }
+.progress-ring span { font-size: 17px; }
+.text-button { padding-top: 9px; font-size: 12px; }
+.small-note { display: none; }
+
+.bottom-nav { position: fixed; z-index: 20; right: max(14px, calc((100vw - 560px) / 2)); bottom: 12px; left: max(14px, calc((100vw - 560px) / 2)); display: grid; height: 58px; grid-template-columns: repeat(3,1fr); padding: 6px; border: 1px solid rgba(221,216,204,.88); border-radius: 18px; background: rgba(255,254,251,.94); box-shadow: 0 14px 36px rgba(48,43,34,.15); backdrop-filter: blur(16px); }
+.bottom-item { display: flex; align-items: center; justify-content: center; gap: 7px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); cursor: pointer; font-size: 11px; }
+.bottom-item span { font-size: 16px; font-weight: 800; }
+.bottom-item.is-active { background: var(--purple-soft); color: var(--purple-dark); font-weight: 800; }
+
+#learningView .page-heading { margin-bottom: 10px; }
+.mode-tabs { flex: 0 0 auto; margin-bottom: 12px; }
+.learning-layout { min-height: 0; flex: 1 1 auto; }
+.practice-panel { display: flex; min-height: 0; padding: clamp(20px, 3vh, 32px); flex-direction: column; }
+.practice-panel h2 { margin: 10px 0 6px; font-size: clamp(19px, 2.4vw, 26px); line-height: 1.45; }
+.practice-hint { margin-bottom: 12px; line-height: 1.5; }
+.practice-panel textarea { min-height: 74px; flex: 1 1 auto; padding: 13px; }
+.coach-panel { min-height: 0; padding: 24px; }
+.mini-character { width: 52px; height: 52px; margin-bottom: 16px; }
+.feedback-panel { min-height: 0; flex: 1 1 auto; margin-top: 0; padding: clamp(20px,3vh,32px); overflow: hidden; }
+.feedback-grid { gap: 10px; margin: 14px 0; }
+.feedback-grid > div { padding: 13px 15px; }
+.feedback-grid p { margin-top: 5px; font-size: 13px; line-height: 1.55; }
+
+#wishesView .page-heading { margin-bottom: 10px; }
+.stats-grid { flex: 0 0 auto; gap: 10px; margin-bottom: 10px; }
+.stat-card { padding: 13px 18px; }
+.stat-card > span { margin-bottom: 3px; }
+.stat-card strong { font-size: 28px; }
+.thin-progress { margin-top: 6px; }
+.wish-toolbar { flex: 0 0 auto; margin-bottom: 8px; }
+.wish-list { min-height: 0; flex: 1 1 auto; align-content: start; gap: 7px; }
+.wish-item { min-height: 0; padding: 10px 14px; }
+.wish-visual { width: 43px; height: 43px; border-radius: 12px; font-size: 19px; }
+.wish-main h2 { font-size: 14px; }
+.wish-meta { margin-top: 4px; }
+.empty-state { min-height: 0; flex: 1 1 auto; padding: 24px; }
+.pagination { display: flex; height: 36px; flex: 0 0 36px; align-items: center; justify-content: center; gap: 14px; margin-top: 6px; }
+.pagination[hidden] { display: none; }
+.pagination button { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); cursor: pointer; }
+.pagination button:disabled { opacity: .35; cursor: default; }
+.pagination span { color: var(--muted); font-size: 11px; font-weight: 800; }
+
+@media (max-width: 900px) {
+  .main-content { height: 100dvh; padding: 12px 18px 80px; }
+  .mobile-header { height: 44px; flex-basis: 44px; margin-bottom: 10px; }
+  .view { height: calc(100dvh - 146px); }
+  .assistant-card { grid-template-columns: minmax(0,1.35fr) minmax(190px,.65fr); }
+  .home-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .learning-layout { grid-template-columns: minmax(0,1.5fr) minmax(220px,.65fr); }
+  .coach-panel { min-height: 0; }
+}
+
+@media (max-width: 620px) {
+  .main-content { padding: 10px 12px 76px; }
+  .mobile-header { margin-bottom: 7px; padding: 0 2px; }
+  .mobile-header .brand { font-size: 14px; }
+  .view { height: calc(100dvh - 137px); }
+  .page-heading { margin-bottom: 8px; }
+  .page-heading h1 { font-size: 23px; }
+  .page-heading .lead { display: none; }
+  .home-heading { margin-bottom: 6px; }
+  .assistant-card { display: flex; height: auto; min-height: 0; flex: 1 1 auto; padding: 12px 16px 15px; flex-direction: column; align-items: stretch; }
+  .character-wrap { min-height: 108px; order: -1; }
+  .character { animation-name: floatMobileSingle; transform: scale(.55); }
+  .character-shadow { bottom: 8px; width: 96px; }
+  .assistant-label { padding: 4px 8px; font-size: 9px; }
+  .assistant-copy h2 { margin: 6px 0 3px; font-size: 18px; line-height: 1.38; }
+  .assistant-copy > p { display: none; }
+  .assistant-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; margin-top: 9px; }
+  .assistant-actions button { padding: 9px 6px; font-size: 10px; }
+  .home-grid { flex: 0 0 150px; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; margin-top: 7px; }
+  .home-grid .panel { padding: 10px; }
+  .home-grid .panel-heading { gap: 0; }
+  .home-grid .icon-box { display: none; }
+  .home-grid .panel-heading h2 { margin-top: 2px; font-size: 11px; line-height: 1.3; }
+  .home-grid .eyebrow { font-size: 8px; }
+  .practice-row, .wish-progress-row { min-height: 0; gap: 8px; padding: 5px 0; }
+  .metric { font-size: 27px; }
+  .metric-unit, .practice-row p { font-size: 9px; }
+  .mini-chart { display: none; }
+  .progress-ring { width: 48px; height: 48px; }
+  .progress-ring::after { inset: 6px; }
+  .progress-ring span { font-size: 13px; }
+  .progress-copy strong { margin: 0; font-size: 10px; line-height: 1.35; }
+  .progress-copy p { display: none; }
+  .text-button { padding-top: 6px; font-size: 9px; }
+  .bottom-nav { right: 10px; bottom: 8px; left: 10px; height: 57px; }
+  .bottom-item { display: grid; gap: 1px; place-items: center; font-size: 9px; }
+  .bottom-item span { font-size: 14px; }
+  .mode-tabs { margin-bottom: 8px; overflow: visible; }
+  .mode-tab { min-width: 0; padding: 8px 4px; font-size: 10px; }
+  .learning-layout { grid-template-columns: 1fr; }
+  .coach-panel { display: none; }
+  .practice-panel { padding: 16px; }
+  .practice-panel h2 { margin: 7px 0 5px; font-size: 17px; line-height: 1.4; }
+  .practice-hint { margin-bottom: 7px; font-size: 10px; }
+  .practice-panel textarea { min-height: 60px; padding: 10px; font-size: 13px; }
+  .composer-footer { margin-top: 7px; }
+  .composer-footer .primary-button { padding: 9px 11px; font-size: 11px; }
+  .feedback-panel { padding: 16px; }
+  .feedback-heading h2 { font-size: 18px; }
+  .feedback-grid { display: grid; grid-template-columns: 1fr; gap: 7px; margin: 10px 0; }
+  .feedback-grid > div { padding: 9px 11px; }
+  .feedback-grid .rewrite { grid-column: auto; }
+  .feedback-grid p { font-size: 11px; line-height: 1.45; }
+  .split-heading { display: flex; align-items: center; }
+  .split-heading .primary-button { width: auto; padding: 9px 11px; font-size: 10px; }
+  .stats-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px; }
+  .accent-stat { grid-column: auto; }
+  .stat-card { padding: 9px; }
+  .stat-card > span { font-size: 9px; }
+  .stat-card strong { font-size: 22px; }
+  .stat-card small { font-size: 9px; }
+  .thin-progress { display: none; }
+  .filter-buttons { width: 100%; overflow: visible; }
+  .filter-button { padding: 7px 6px; font-size: 9px; }
+  .wish-list { gap: 6px; }
+  .wish-item { grid-template-columns: auto minmax(0,1fr); gap: 9px; padding: 8px 10px; }
+  .wish-visual { width: 38px; height: 38px; }
+  .wish-main h2 { font-size: 12px; }
+  .wish-meta { gap: 3px 7px; font-size: 8px; }
+  .wish-meta span:last-child { display: none; }
+  .wish-actions { grid-column: 1/-1; }
+  .status-select, .delete-button { padding: 6px 8px; font-size: 9px; }
+  .pagination { height: 31px; flex-basis: 31px; margin-top: 3px; }
+  dialog { max-height: calc(100dvh - 24px); overflow: auto; }
+  dialog form { padding: 18px; }
+  dialog label { margin-top: 10px; }
+  dialog input, dialog select, dialog textarea { margin-top: 5px; padding: 9px 10px; }
+  .dialog-actions { margin-top: 14px; }
+  @keyframes floatMobileSingle { 0%,100% { transform: scale(.55) translateY(2px) rotate(-1deg); } 50% { transform: scale(.55) translateY(-7px) rotate(1deg); } }
+}
+
+@media (max-height: 700px) {
+  .main-content { padding-top: 7px; padding-bottom: 72px; }
+  .mobile-header { height: 38px; flex-basis: 38px; margin-bottom: 5px; }
+  .view { height: calc(100dvh - 122px); }
+  .page-heading h1 { font-size: 21px; }
+  .eyebrow { font-size: 9px; }
+  .assistant-card { padding-top: 10px; padding-bottom: 10px; }
+  .character-wrap { min-height: 86px; }
+  .home-grid { flex-basis: 125px; }
+  .home-grid .panel { padding: 8px 10px; }
+  .practice-row, .wish-progress-row { padding: 2px 0; }
+  .stats-grid { margin-bottom: 6px; }
+  .stat-card { padding-top: 7px; padding-bottom: 7px; }
+  .wish-toolbar { margin-bottom: 5px; }
+}

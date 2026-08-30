@@ -61,6 +61,7 @@ export function buildFeedback(answer, mode = "explain") {
 let state = loadState();
 let currentFilter = "all";
 let currentMode = state.lastMode || "explain";
+let wishPage = 0;
 
 function loadState() {
   try {
@@ -88,7 +89,7 @@ function navigate(view) {
   document.querySelectorAll(".view").forEach((el) => el.classList.toggle("is-visible", el.dataset.page === view));
   document.querySelectorAll("[data-view]").forEach((el) => el.classList.toggle("is-active", el.dataset.view === view));
   history.replaceState(null, "", `#${view}`);
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  closeMenu();
 }
 
 function renderStats() {
@@ -106,8 +107,16 @@ function renderStats() {
 
 function renderWishes() {
   const list = document.getElementById("wishList");
-  const visible = state.wishes.filter((wish) => currentFilter === "all" || wish.status === currentFilter);
-  document.getElementById("wishEmpty").hidden = visible.length !== 0;
+  const filtered = state.wishes.filter((wish) => currentFilter === "all" || wish.status === currentFilter);
+  const pageSize = window.innerWidth <= 620 ? 2 : 3;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  wishPage = Math.min(wishPage, totalPages - 1);
+  const visible = filtered.slice(wishPage * pageSize, (wishPage + 1) * pageSize);
+  document.getElementById("wishEmpty").hidden = filtered.length !== 0;
+  document.getElementById("wishPagination").hidden = filtered.length === 0;
+  document.getElementById("wishPageLabel").textContent = `${wishPage + 1} / ${totalPages}`;
+  document.getElementById("previousWishPage").disabled = wishPage === 0;
+  document.getElementById("nextWishPage").disabled = wishPage >= totalPages - 1;
   list.innerHTML = visible.map((wish) => {
     const icon = wish.status === "purchased" ? "✓" : wish.status === "hold" ? "…" : "◇";
     const priority = { high: "優先度 高め", medium: "優先度 ふつう", low: "いつか" }[wish.priority] || "優先度 ふつう";
@@ -168,6 +177,7 @@ function addWish() {
     createdAt: new Date().toISOString().slice(0, 10)
   });
   saveState();
+  wishPage = 0;
   renderWishes();
   document.getElementById("wishForm").reset();
   showToast("欲しいものに追加しました");
@@ -186,6 +196,7 @@ function submitPractice() {
   document.getElementById("feedbackNext").textContent = feedback.next;
   document.getElementById("feedbackRewrite").textContent = feedback.rewrite;
   const panel = document.getElementById("feedbackPanel");
+  document.getElementById("learningWorkspace").hidden = true;
   panel.hidden = false;
   state.practiceCount += 1;
   saveState();
@@ -208,6 +219,7 @@ function setMode(mode) {
   document.getElementById("practiceAnswer").value = "";
   document.getElementById("characterCount").textContent = "0文字";
   document.getElementById("feedbackPanel").hidden = true;
+  document.getElementById("learningWorkspace").hidden = false;
 }
 
 function updateAssistant(message, submessage, happy = false) {
@@ -233,6 +245,7 @@ function resetDemo() {
   state = initialState();
   saveState();
   currentFilter = "all";
+  wishPage = 0;
   setMode("explain");
   renderWishes();
   updateAssistant("今日は、伝える練習を3分だけやってみませんか？", "短くても大丈夫。考えを言葉にするところから始めましょう。");
@@ -240,11 +253,29 @@ function resetDemo() {
   showToast("体験データを最初に戻しました");
 }
 
+function closeMenu() {
+  const popover = document.getElementById("menuPopover");
+  const button = document.getElementById("menuButton");
+  popover.hidden = true;
+  button.setAttribute("aria-expanded", "false");
+  button.setAttribute("aria-label", "メニューを開く");
+}
+
+function toggleMenu() {
+  const popover = document.getElementById("menuPopover");
+  const opening = popover.hidden;
+  popover.hidden = !opening;
+  const button = document.getElementById("menuButton");
+  button.setAttribute("aria-expanded", String(opening));
+  button.setAttribute("aria-label", opening ? "メニューを閉じる" : "メニューを開く");
+}
+
 function bindEvents() {
   document.querySelectorAll("[data-view], [data-go]").forEach((button) => button.addEventListener("click", () => navigate(button.dataset.view || button.dataset.go)));
   document.querySelectorAll(".mode-tab").forEach((tab) => tab.addEventListener("click", () => setMode(tab.dataset.mode)));
   document.querySelectorAll(".filter-button").forEach((button) => button.addEventListener("click", () => {
     currentFilter = button.dataset.filter;
+    wishPage = 0;
     document.querySelectorAll(".filter-button").forEach((item) => item.classList.toggle("is-active", item === button));
     renderWishes();
   }));
@@ -258,9 +289,13 @@ function bindEvents() {
   });
   document.getElementById("practiceAnswer").addEventListener("input", (event) => { document.getElementById("characterCount").textContent = `${[...event.target.value].length}文字`; });
   document.getElementById("submitPractice").addEventListener("click", submitPractice);
-  document.getElementById("nextPractice").addEventListener("click", () => { document.getElementById("practiceAnswer").value = ""; document.getElementById("characterCount").textContent = "0文字"; document.getElementById("feedbackPanel").hidden = true; document.getElementById("practiceAnswer").focus(); });
-  document.getElementById("resetButton").addEventListener("click", resetDemo);
-  document.getElementById("resetButtonMobile").addEventListener("click", resetDemo);
+  document.getElementById("nextPractice").addEventListener("click", () => { document.getElementById("practiceAnswer").value = ""; document.getElementById("characterCount").textContent = "0文字"; document.getElementById("feedbackPanel").hidden = true; document.getElementById("learningWorkspace").hidden = false; document.getElementById("practiceAnswer").focus(); });
+  document.getElementById("previousWishPage").addEventListener("click", () => { wishPage = Math.max(0, wishPage - 1); renderWishes(); });
+  document.getElementById("nextWishPage").addEventListener("click", () => { wishPage += 1; renderWishes(); });
+  document.getElementById("menuButton").addEventListener("click", toggleMenu);
+  document.addEventListener("click", (event) => { if (!event.target.closest(".menu-wrap")) closeMenu(); });
+  document.getElementById("resetButtonMenu").addEventListener("click", () => { resetDemo(); closeMenu(); });
+  window.addEventListener("resize", renderWishes);
 }
 
 if (typeof document !== "undefined") {
