@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculateWishStats, getSwipeDirection, selectNextWish } from "../app.js";
+import { calculateWishStats, extractWishName, getSwipeDirection, selectNextWish } from "../app.js";
 
 test("実現率は欲しいものと購入済みだけを分母にする", () => {
   const stats = calculateWishStats([{ status: "active" }, { status: "active" }, { status: "purchased" }, { status: "hold" }, { status: "retired" }]);
@@ -24,4 +24,9 @@ test("欲しいもの一覧の左右スワイプを判定する", () => {
   assert.equal(getSwipeDirection(320, 80), "next");
   assert.equal(getSwipeDirection(80, 320), "previous");
   assert.equal(getSwipeDirection(180, 155), null);
+});
+
+test("会話文から欲しいものの名前を取り出す", () => {
+  assert.equal(extractWishName("折りたたみ自転車が欲しいです。"), "折りたたみ自転車");
+  assert.equal(extractWishName("欲しいのは、電子書籍リーダー"), "電子書籍リーダー");
 });

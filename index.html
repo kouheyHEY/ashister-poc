@@ -46,8 +46,8 @@
               <h2 id="assistantMessage">欲しいものを、ひとつずつ叶えていきましょう。</h2>
               <p id="assistantSubmessage">思いついたら、忘れないうちに置いておけます。</p>
               <div class="assistant-actions">
-                <button class="primary-button" data-open-wish type="button">＋ 欲しいものを追加</button>
-                <button class="secondary-button" data-go="wishes" type="button">リストを見る</button>
+                <button class="primary-button" data-open-chat type="button">アシスターに話す</button>
+                <button class="secondary-button" data-open-wish type="button">＋ すぐ追加</button>
               </div>
             </div>
           </article>
@@ -90,8 +90,24 @@
         </section>
       </main>
 
+      <section class="chat-layer" id="chatLayer" aria-label="アシスターとの会話" hidden>
+        <header class="chat-header">
+          <button class="chat-close" id="closeChat" type="button" aria-label="会話を閉じる">←</button>
+          <div class="chat-title"><span class="chat-avatar" aria-hidden="true">A</span><div><strong>アシスター</strong><small>いつでも話しかけてください</small></div></div>
+          <button class="chat-restart" id="restartChat" type="button">最初から</button>
+        </header>
+        <div class="chat-messages" id="chatMessages" aria-live="polite"></div>
+        <div class="chat-quick-replies" id="chatQuickReplies"></div>
+        <form class="chat-composer" id="chatComposer">
+          <label class="sr-only" for="chatInput">アシスターへのメッセージ</label>
+          <input id="chatInput" autocomplete="off" maxlength="100" placeholder="メッセージを入力" />
+          <button type="submit" aria-label="送信">↑</button>
+        </form>
+      </section>
+
       <nav class="bottom-nav" aria-label="画面メニュー">
         <button class="bottom-item is-active" data-view="home" type="button"><span aria-hidden="true">⌂</span>ホーム</button>
+        <button class="bottom-item talk-item" data-open-chat type="button"><span aria-hidden="true">●</span>話す</button>
         <button class="bottom-item" data-view="wishes" type="button"><span aria-hidden="true">◇</span>欲しいもの</button>
       </nav>
     </div>

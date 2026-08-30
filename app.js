@@ -32,9 +32,20 @@ export function selectNextWish(wishes) {
     .toSorted((a, b) => (order[a.priority] ?? 1) - (order[b.priority] ?? 1) || a.createdAt.localeCompare(b.createdAt))[0] ?? null;
 }
 
+export function extractWishName(message) {
+  return message
+    .trim()
+    .replace(/^(欲しいものは|欲しいのは|追加したいのは)[、,:：\s]*/, "")
+    .replace(/[、,]?\s*(が)?(欲しい|ほしい|買いたい|を追加したい)(です|です。|。)?$/, "")
+    .trim();
+}
+
 let state = loadState();
 let currentFilter = "all";
 let wishPage = 0;
+let chatMode = "idle";
+let chatDraft = {};
+let pendingPurchaseId = null;
 
 function loadState() {
   try {
@@ -101,6 +112,7 @@ function renderWishes() {
       <div class="wish-visual" aria-hidden="true">${icon}</div>
       <div class="wish-main"><h2>${escapeHtml(wish.name)}</h2><div class="wish-meta"><span>${formatPrice(wish.price)}</span><span class="priority">${priority}</span>${wish.reason ? `<span class="wish-reason">${escapeHtml(wish.reason)}</span>` : ""}</div></div>
       <div class="wish-actions">
+        ${wish.status === "active" ? `<button class="quick-purchase" data-quick-purchase="${escapeHtml(wish.id)}" type="button">✓ 買えた</button>` : ""}
         <label class="sr-only" for="status-${escapeHtml(wish.id)}">${escapeHtml(wish.name)}の状態</label>
         <select class="status-select" id="status-${escapeHtml(wish.id)}" data-wish-status="${escapeHtml(wish.id)}">
           <option value="active" ${wish.status === "active" ? "selected" : ""}>欲しい</option>
@@ -114,6 +126,7 @@ function renderWishes() {
   }).join("");
 
   list.querySelectorAll("[data-wish-status]").forEach((select) => select.addEventListener("change", () => updateWishStatus(select.dataset.wishStatus, select.value)));
+  list.querySelectorAll("[data-quick-purchase]").forEach((button) => button.addEventListener("click", () => updateWishStatus(button.dataset.quickPurchase, "purchased")));
   list.querySelectorAll("[data-delete-wish]").forEach((button) => button.addEventListener("click", () => deleteWish(button.dataset.deleteWish)));
   renderDashboard();
 }
@@ -140,26 +153,35 @@ function deleteWish(id) {
   showToast("リストから削除しました");
 }
 
-function addWish() {
-  const name = document.getElementById("wishName").value.trim();
-  if (!name) return false;
-  const priceValue = document.getElementById("wishPrice").value.replace(/[^0-9]/g, "");
+function addWishFromData({ name, reason = "", price = 0, priority = "medium" }) {
   state.wishes.unshift({
     id: `wish-${Date.now()}`,
     name,
-    reason: document.getElementById("wishReason").value.trim(),
-    price: priceValue ? Number(priceValue) : 0,
-    priority: document.getElementById("wishPriority").value,
+    reason,
+    price: Number(price) || 0,
+    priority,
     status: "active",
     createdAt: new Date().toISOString().slice(0, 10)
   });
   wishPage = 0;
   currentFilter = "all";
   saveState();
-  document.getElementById("wishForm").reset();
   document.querySelectorAll(".filter-button").forEach((button) => button.classList.toggle("is-active", button.dataset.filter === "all"));
   renderWishes();
   updateAssistant("新しい「欲しい」を覚えました。", "叶えたい理由も、大切にしていきましょう。");
+}
+
+function addWish() {
+  const name = document.getElementById("wishName").value.trim();
+  if (!name) return false;
+  const priceValue = document.getElementById("wishPrice").value.replace(/[^0-9]/g, "");
+  addWishFromData({
+    name,
+    reason: document.getElementById("wishReason").value.trim(),
+    price: priceValue ? Number(priceValue) : 0,
+    priority: document.getElementById("wishPriority").value
+  });
+  document.getElementById("wishForm").reset();
   showToast("欲しいものに追加しました");
   return true;
 }
@@ -177,6 +199,231 @@ function showToast(message) {
   toast.classList.add("is-visible");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 2400);
+}
+
+function appendChatMessage(role, text) {
+  const message = document.createElement("div");
+  message.className = `chat-message ${role}`;
+  message.textContent = text;
+  document.getElementById("chatMessages").append(message);
+  message.scrollIntoView({ block: "end", behavior: "smooth" });
+}
+
+function setChatReplies(replies) {
+  const container = document.getElementById("chatQuickReplies");
+  container.innerHTML = "";
+  replies.forEach(({ label, action, value = "" }) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = action.startsWith("confirm") ? "chat-chip confirm" : "chat-chip";
+    button.textContent = label;
+    button.dataset.chatAction = action;
+    button.dataset.chatValue = value;
+    container.append(button);
+  });
+}
+
+function showMainChatActions() {
+  chatMode = "idle";
+  setChatReplies([
+    { label: "＋ 欲しいものを追加", action: "start-add" },
+    { label: "✓ 買えたものを報告", action: "start-purchase" },
+    { label: "リストを見る", action: "view-list" }
+  ]);
+}
+
+function resetChat() {
+  chatMode = "idle";
+  chatDraft = {};
+  pendingPurchaseId = null;
+  document.getElementById("chatMessages").innerHTML = "";
+  appendChatMessage("assistant", "こんにちは。欲しいものの追加や、買えたものの報告をお手伝いします。今日はどうしますか？");
+  showMainChatActions();
+}
+
+function openChat() {
+  const layer = document.getElementById("chatLayer");
+  layer.hidden = false;
+  document.body.classList.add("chat-open");
+  if (!document.getElementById("chatMessages").children.length) resetChat();
+}
+
+function closeChat() {
+  document.getElementById("chatLayer").hidden = true;
+  document.body.classList.remove("chat-open", "is-input-active");
+  document.getElementById("chatInput").blur();
+}
+
+function askReason() {
+  chatMode = "add-reason";
+  appendChatMessage("assistant", "それが欲しい理由を教えてください。あとから見返したときに思い出しやすくなります。");
+  setChatReplies([{ label: "理由はあとで", action: "skip-reason" }]);
+}
+
+function askPrice() {
+  chatMode = "add-price";
+  appendChatMessage("assistant", "おおよその価格はいくらですか？数字だけでも大丈夫です。");
+  setChatReplies([{ label: "価格は未定", action: "skip-price" }]);
+}
+
+function askPriority() {
+  chatMode = "add-priority";
+  appendChatMessage("assistant", "最後に、今の優先度を選んでください。");
+  setChatReplies([
+    { label: "高め", action: "set-priority", value: "high" },
+    { label: "ふつう", action: "set-priority", value: "medium" },
+    { label: "いつか", action: "set-priority", value: "low" }
+  ]);
+}
+
+function showAddConfirmation() {
+  const priorityLabel = { high: "高め", medium: "ふつう", low: "いつか" }[chatDraft.priority];
+  appendChatMessage("assistant", `この内容でリストに追加しますか？\n\n名前：${chatDraft.name}\n理由：${chatDraft.reason || "未設定"}\n価格：${formatPrice(chatDraft.price)}\n優先度：${priorityLabel}`);
+  chatMode = "confirm-add";
+  setChatReplies([
+    { label: "この内容で追加", action: "confirm-add" },
+    { label: "やり直す", action: "restart-add" },
+    { label: "キャンセル", action: "cancel" }
+  ]);
+}
+
+function showPurchaseChoices() {
+  const active = state.wishes.filter((wish) => wish.status === "active");
+  if (!active.length) {
+    appendChatMessage("assistant", "いま「欲しい」状態のものはありません。新しく追加しますか？");
+    showMainChatActions();
+    return;
+  }
+  chatMode = "choose-purchase";
+  appendChatMessage("assistant", "どれが買えましたか？");
+  setChatReplies(active.slice(0, 5).map((wish) => ({ label: wish.name, action: "choose-purchase", value: wish.id })));
+}
+
+function showPurchaseConfirmation(id) {
+  const wish = state.wishes.find((item) => item.id === id);
+  if (!wish) return showPurchaseChoices();
+  pendingPurchaseId = id;
+  chatMode = "confirm-purchase";
+  appendChatMessage("assistant", `「${wish.name}」を「買えた」に変更しますか？`);
+  setChatReplies([
+    { label: "買えたに変更", action: "confirm-purchase" },
+    { label: "選び直す", action: "start-purchase" },
+    { label: "キャンセル", action: "cancel" }
+  ]);
+}
+
+function handleChatAction(action, value = "") {
+  if (action === "start-add") {
+    appendChatMessage("user", "欲しいものを追加したい");
+    chatDraft = {};
+    chatMode = "add-name";
+    appendChatMessage("assistant", "何が欲しいですか？");
+    setChatReplies([]);
+  } else if (action === "skip-reason") {
+    chatDraft.reason = "";
+    appendChatMessage("user", "理由はあとで");
+    askPrice();
+  } else if (action === "skip-price") {
+    chatDraft.price = 0;
+    appendChatMessage("user", "価格は未定");
+    askPriority();
+  } else if (action === "set-priority") {
+    chatDraft.priority = value;
+    appendChatMessage("user", { high: "優先度は高め", medium: "優先度はふつう", low: "いつか欲しい" }[value]);
+    showAddConfirmation();
+  } else if (action === "confirm-add") {
+    addWishFromData(chatDraft);
+    appendChatMessage("user", "この内容で追加");
+    appendChatMessage("assistant", `「${chatDraft.name}」をリストに追加しました。`);
+    showToast("欲しいものに追加しました");
+    chatDraft = {};
+    showMainChatActions();
+  } else if (action === "restart-add") {
+    appendChatMessage("user", "やり直す");
+    chatDraft = {};
+    chatMode = "add-name";
+    appendChatMessage("assistant", "わかりました。何が欲しいですか？");
+    setChatReplies([]);
+  } else if (action === "start-purchase") {
+    appendChatMessage("user", "買えたものを報告したい");
+    showPurchaseChoices();
+  } else if (action === "choose-purchase") {
+    const wish = state.wishes.find((item) => item.id === value);
+    if (wish) appendChatMessage("user", wish.name);
+    showPurchaseConfirmation(value);
+  } else if (action === "confirm-purchase") {
+    const wish = state.wishes.find((item) => item.id === pendingPurchaseId);
+    if (!wish) return showPurchaseChoices();
+    appendChatMessage("user", "買えたに変更");
+    updateWishStatus(wish.id, "purchased");
+    appendChatMessage("assistant", `「${wish.name}」を買えたものとして記録しました。おめでとうございます！`);
+    pendingPurchaseId = null;
+    showMainChatActions();
+  } else if (action === "view-list") {
+    closeChat();
+    navigate("wishes");
+  } else if (action === "cancel") {
+    appendChatMessage("user", "キャンセル");
+    appendChatMessage("assistant", "変更せずに戻しました。ほかにできることはありますか？");
+    chatDraft = {};
+    pendingPurchaseId = null;
+    showMainChatActions();
+  }
+}
+
+function handleChatText(rawText) {
+  const text = rawText.trim();
+  if (!text) return;
+  appendChatMessage("user", text);
+  setChatReplies([]);
+
+  if (chatMode === "add-name") {
+    chatDraft.name = extractWishName(text);
+    if (!chatDraft.name) {
+      appendChatMessage("assistant", "追加したいものの名前を教えてください。");
+      return;
+    }
+    askReason();
+  } else if (chatMode === "add-reason") {
+    chatDraft.reason = text;
+    askPrice();
+  } else if (chatMode === "add-price") {
+    const digits = text.replace(/[^0-9]/g, "");
+    if (!digits) {
+      appendChatMessage("assistant", "数字で入力するか、「価格は未定」を選んでください。");
+      setChatReplies([{ label: "価格は未定", action: "skip-price" }]);
+      return;
+    }
+    chatDraft.price = Number(digits);
+    askPriority();
+  } else if (chatMode === "choose-purchase") {
+    const match = state.wishes.find((wish) => wish.status === "active" && wish.name.includes(text));
+    if (match) showPurchaseConfirmation(match.id);
+    else {
+      appendChatMessage("assistant", "該当するものが見つかりませんでした。下から選んでください。");
+      showPurchaseChoices();
+    }
+  } else if (chatMode.startsWith("confirm") || chatMode === "add-priority") {
+    appendChatMessage("assistant", "内容を確認して、下のボタンから選んでください。");
+  } else if (/買えた|購入した|買った/.test(text)) {
+    showPurchaseChoices();
+  } else if (/リスト|一覧/.test(text)) {
+    appendChatMessage("assistant", "欲しいものの一覧を開きます。");
+    window.setTimeout(() => { closeChat(); navigate("wishes"); }, 350);
+  } else if (/欲しい|ほしい|買いたい|追加/.test(text)) {
+    const name = extractWishName(text);
+    chatDraft = {};
+    if (name && !/^(もの|物)$/.test(name)) {
+      chatDraft.name = name;
+      askReason();
+    } else {
+      chatMode = "add-name";
+      appendChatMessage("assistant", "何が欲しいですか？");
+    }
+  } else {
+    appendChatMessage("assistant", "欲しいものの追加、買えたものの報告、リストの確認をお手伝いできます。");
+    showMainChatActions();
+  }
 }
 
 function resetDemo() {
@@ -209,6 +456,7 @@ function toggleMenu() {
 
 function bindEvents() {
   document.querySelectorAll("[data-view], [data-go]").forEach((element) => element.addEventListener("click", (event) => { event.preventDefault(); navigate(element.dataset.view || element.dataset.go); }));
+  document.querySelectorAll("[data-open-chat]").forEach((button) => button.addEventListener("click", openChat));
   document.querySelectorAll(".filter-button").forEach((button) => button.addEventListener("click", () => {
     currentFilter = button.dataset.filter;
     wishPage = 0;
@@ -228,6 +476,18 @@ function bindEvents() {
   document.getElementById("menuButton").addEventListener("click", toggleMenu);
   document.addEventListener("click", (event) => { if (!event.target.closest(".menu-wrap")) closeMenu(); });
   document.getElementById("resetButtonMenu").addEventListener("click", () => { resetDemo(); closeMenu(); });
+  document.getElementById("closeChat").addEventListener("click", closeChat);
+  document.getElementById("restartChat").addEventListener("click", resetChat);
+  document.getElementById("chatQuickReplies").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-chat-action]");
+    if (button) handleChatAction(button.dataset.chatAction, button.dataset.chatValue);
+  });
+  document.getElementById("chatComposer").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const input = document.getElementById("chatInput");
+    handleChatText(input.value);
+    input.value = "";
+  });
 
   let swipeStartX = 0;
   const wishList = document.getElementById("wishList");
@@ -239,9 +499,9 @@ function bindEvents() {
     if (!target.disabled) target.click();
   }, { passive: true });
 
-  document.addEventListener("focusin", (event) => { if (event.target.matches("input, textarea, select")) document.body.classList.add("is-input-active"); });
+  document.addEventListener("focusin", (event) => { if (event.target.matches("input, textarea")) document.body.classList.add("is-input-active"); });
   document.addEventListener("focusout", () => window.setTimeout(() => {
-    if (!document.activeElement?.matches("input, textarea, select")) document.body.classList.remove("is-input-active");
+    if (!document.activeElement?.matches("input, textarea")) document.body.classList.remove("is-input-active");
   }, 120));
 }
 
