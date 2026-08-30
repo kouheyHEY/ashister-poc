@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildFeedback, calculateWishStats } from "../app.js";
+import { buildFeedback, calculateWishStats, getSwipeDirection } from "../app.js";
 
 test("実現率は欲しいものと購入済みだけを分母にする", () => {
   const stats = calculateWishStats([
@@ -20,4 +20,10 @@ test("回答に応じたフィードバックを返す", () => {
   assert.match(result.next, /結論/);
   assert.match(result.rewrite, /結論から言うと/);
   assert.doesNotMatch(result.rewrite, /ですです/);
+});
+
+test("欲しいもの一覧の左右スワイプを判定する", () => {
+  assert.equal(getSwipeDirection(320, 80), "next");
+  assert.equal(getSwipeDirection(80, 320), "previous");
+  assert.equal(getSwipeDirection(180, 155), null);
 });

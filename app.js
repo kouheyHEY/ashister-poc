@@ -35,6 +35,12 @@ export function calculateWishStats(wishes) {
   return { active, purchased, rate: denominator ? Math.round((purchased / denominator) * 100) : 0 };
 }
 
+export function getSwipeDirection(startX, endX, threshold = 48) {
+  const distance = endX - startX;
+  if (Math.abs(distance) < threshold) return null;
+  return distance < 0 ? "next" : "previous";
+}
+
 export function buildFeedback(answer, mode = "explain") {
   const cleaned = answer.trim();
   const length = [...cleaned].length;
@@ -108,7 +114,7 @@ function renderStats() {
 function renderWishes() {
   const list = document.getElementById("wishList");
   const filtered = state.wishes.filter((wish) => currentFilter === "all" || wish.status === currentFilter);
-  const pageSize = window.innerWidth <= 620 ? 2 : 3;
+  const pageSize = document.querySelector(".app-shell").getBoundingClientRect().width <= 620 ? 2 : 3;
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   wishPage = Math.min(wishPage, totalPages - 1);
   const visible = filtered.slice(wishPage * pageSize, (wishPage + 1) * pageSize);
@@ -296,6 +302,25 @@ function bindEvents() {
   document.addEventListener("click", (event) => { if (!event.target.closest(".menu-wrap")) closeMenu(); });
   document.getElementById("resetButtonMenu").addEventListener("click", () => { resetDemo(); closeMenu(); });
   window.addEventListener("resize", renderWishes);
+
+  let swipeStartX = 0;
+  const wishList = document.getElementById("wishList");
+  wishList.addEventListener("touchstart", (event) => { swipeStartX = event.changedTouches[0].clientX; }, { passive: true });
+  wishList.addEventListener("touchend", (event) => {
+    const direction = getSwipeDirection(swipeStartX, event.changedTouches[0].clientX);
+    if (!direction) return;
+    const target = direction === "next" ? document.getElementById("nextWishPage") : document.getElementById("previousWishPage");
+    if (!target.disabled) target.click();
+  }, { passive: true });
+
+  document.addEventListener("focusin", (event) => {
+    if (event.target.matches("input, textarea, select")) document.body.classList.add("is-input-active");
+  });
+  document.addEventListener("focusout", () => {
+    window.setTimeout(() => {
+      if (!document.activeElement?.matches("input, textarea, select")) document.body.classList.remove("is-input-active");
+    }, 120);
+  });
 }
 
 if (typeof document !== "undefined") {
