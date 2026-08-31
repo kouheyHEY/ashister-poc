@@ -25,13 +25,6 @@ export function getSwipeDirection(startX, endX, threshold = 48) {
   return distance < 0 ? "next" : "previous";
 }
 
-export function selectNextWish(wishes) {
-  const order = { high: 0, medium: 1, low: 2 };
-  return wishes
-    .filter((wish) => wish.status === "active")
-    .toSorted((a, b) => (order[a.priority] ?? 1) - (order[b.priority] ?? 1) || a.createdAt.localeCompare(b.createdAt))[0] ?? null;
-}
-
 export function extractWishName(message) {
   return message
     .trim()
@@ -83,20 +76,11 @@ function navigate(view) {
   closeMenu();
 }
 
-function renderDashboard() {
+function renderStats() {
   const stats = calculateWishStats(state.wishes);
   document.getElementById("activeWishCount").textContent = stats.active;
   document.getElementById("purchasedWishCount").textContent = stats.purchased;
   document.getElementById("wishRate").textContent = stats.rate;
-  document.getElementById("homeWishRate").textContent = `${stats.rate}%`;
-  document.getElementById("homeProgressRing").style.setProperty("--rate", stats.rate);
-  document.getElementById("homeWishHeadline").textContent = `${stats.purchased}個、実現しました`;
-  document.getElementById("homeWishDetail").textContent = stats.active ? `あと${stats.active}個の「欲しい」` : "新しい「欲しい」を置いてみましょう";
-
-  const next = selectNextWish(state.wishes);
-  document.getElementById("homeNextWishName").textContent = next?.name ?? "登録してみましょう";
-  document.getElementById("homeNextWishReason").textContent = next?.reason || "欲しい理由も一緒に残せます";
-  document.getElementById("homeNextWishPrice").textContent = next ? formatPrice(next.price) : "—";
 }
 
 function renderWishes() {
@@ -136,7 +120,7 @@ function renderWishes() {
   list.querySelectorAll("[data-wish-status]").forEach((select) => select.addEventListener("change", () => updateWishStatus(select.dataset.wishStatus, select.value)));
   list.querySelectorAll("[data-quick-purchase]").forEach((button) => button.addEventListener("click", () => updateWishStatus(button.dataset.quickPurchase, "purchased")));
   list.querySelectorAll("[data-delete-wish]").forEach((button) => button.addEventListener("click", () => deleteWish(button.dataset.deleteWish)));
-  renderDashboard();
+  renderStats();
 }
 
 function updateWishStatus(id, status) {
